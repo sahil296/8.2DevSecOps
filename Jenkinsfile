@@ -1,57 +1,51 @@
 pipeline {
-    agent any
+  agent any
 
-    triggers {
-        pollSCM('* * * * *')
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: 'main', url: 'https://github.com/sahil296/8.2CDevSecOps.git'
+      }
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/sahil296/8.2DevSecOps'
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                echo 'Installing Node.js project dependencies using npm.'
-                sh 'npm install'
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                echo 'Running project test cases.'
-                sh 'npm test || true'
-            }
-        }
-
-        stage('Generate Coverage Report') {
-            steps {
-                echo 'Generating test coverage report.'
-                sh 'npm run coverage || true'
-            }
-        }
-
-        stage('NPM Audit Security Scan') {
-            steps {
-                echo 'Running npm audit to identify known dependency vulnerabilities and CVEs.'
-                sh 'npm audit || true'
-            }
-        }
+    stage('Install Dependencies') {
+      steps {
+        sh 'npm install'
+      }
     }
 
-    post {
-        always {
-            echo 'DevSecOps basic pipeline completed. Review console output for npm audit findings.'
-        }
-
-        success {
-            echo 'Pipeline finished successfully.'
-        }
-
-        failure {
-            echo 'Pipeline failed, but security findings may still be visible in console output.'
-        }
+    stage('Run Tests') {
+      steps {
+        sh 'npm test || true'
+      }
     }
+
+    stage('Generate Coverage Report') {
+      steps {
+        sh 'npm run coverage || true'
+      }
+    }
+
+    stage('NPM Audit (Security Scan)') {
+      steps {
+        sh 'npm audit || true'
+      }
+    }
+
+    stage('SonarCloud Analysis') {
+      steps {
+        withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
+          sh '''
+            if [ ! -d "sonar-scanner" ]; then
+              curl -sSLo sonar.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
+              unzip -o sonar.zip
+              mv sonar-scanner-* sonar-scanner
+            fi
+
+            ./sonar-scanner/bin/sonar-scanner -Dsonar.login=$SONAR_TOKEN
+          '''
+        }
+      }
+    }
+  }
 }
