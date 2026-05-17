@@ -36,13 +36,15 @@ pipeline {
       steps {
         withCredentials([string(credentialsId: 'SONAR_TOKEN', variable: 'SONAR_TOKEN')]) {
           sh '''
-            if [ ! -d "sonar-scanner" ]; then
-              curl -sSLo sonar.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
-              unzip -o sonar.zip
-              mv sonar-scanner-* sonar-scanner
-            fi
+            rm -rf sonar-scanner sonar.zip sonar-scanner-*-linux*
 
-            ./sonar-scanner/bin/sonar-scanner -Dsonar.login=$SONAR_TOKEN
+            curl -sSLo sonar.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-7.0.2.4839-linux-aarch64.zip
+
+            unzip -o sonar.zip
+
+            mv sonar-scanner-7.0.2.4839-linux-aarch64 sonar-scanner
+
+            ./sonar-scanner/bin/sonar-scanner -Dsonar.token=$SONAR_TOKEN
           '''
         }
       }
